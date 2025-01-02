@@ -7,16 +7,14 @@ from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
-
-# Paths
-data_dir = "C:/Users/karav_867vu4n/OneDrive/Desktop/images"  # Root folder containing subfolders for each food category
-image_size = (224, 224)  # ResNet/EfficientNet default size
+data_dir = "C:/Users/karav_867vu4n/OneDrive/Desktop/images"  
+image_size = (224, 224) 
 batch_size = 32
 
-# Data Augmentation and Data Generators
+
 datagen = ImageDataGenerator(
     rescale=1.0 / 255,
-    validation_split=0.2,  # 20% for validation
+    validation_split=0.2,  
     horizontal_flip=True,
     rotation_range=10,
     zoom_range=0.1
@@ -38,21 +36,19 @@ val_gen = datagen.flow_from_directory(
     subset='validation'
 )
 
-# Model - Using a Pretrained Model
 base_model = tf.keras.applications.EfficientNetB0(weights='imagenet', include_top=False, input_shape=(*image_size, 3))
-base_model.trainable = False  # Freeze base model
-
+base_model.trainable = False 
 model = models.Sequential([
     base_model,
     layers.GlobalAveragePooling2D(),
     layers.Dense(128, activation='relu'),
     layers.Dropout(0.5),
-    layers.Dense(len(train_gen.class_indices), activation='softmax')  # Number of classes
+    layers.Dense(len(train_gen.class_indices), activation='softmax')  
 ])
 
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Training
+
 history = model.fit(
     train_gen,
     validation_data=val_gen,
@@ -61,7 +57,6 @@ history = model.fit(
     validation_steps=val_gen.samples // batch_size
 )
 
-# Evaluate the model
 test_gen = datagen.flow_from_directory(
     data_dir,
     target_size=image_size,
@@ -74,7 +69,7 @@ y_pred = model.predict(test_gen)
 y_pred_classes = np.argmax(y_pred, axis=1)
 y_true = test_gen.classes
 
-# Confusion Matrix
+
 cm = confusion_matrix(y_true, y_pred_classes)
 plt.figure(figsize=(12, 10))
 sns.heatmap(cm, annot=True, fmt="d", xticklabels=test_gen.class_indices.keys(), yticklabels=test_gen.class_indices.keys())
@@ -83,15 +78,14 @@ plt.xlabel('Predicted')
 plt.title('Confusion Matrix')
 plt.show()
 
-# Classification Report
 print(classification_report(y_true, y_pred_classes, target_names=test_gen.class_indices.keys()))
 
-# Fine-Tune the Model
+
 base_model.trainable = True
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5), loss='categorical_crossentropy', metrics=['accuracy'])
 history_fine_tune = model.fit(train_gen, validation_data=val_gen, epochs=5)
 
-# Calorie Mapping
+#
 calorie_dict = {
     "apple_pie": 237,
     "baby_back_ribs": 292,
@@ -196,7 +190,7 @@ calorie_dict = {
     "waffles": 291
 }
 
-# Inference
+
 def predict_and_calorie(image_path, model, class_indices, calorie_dict):
     img = load_img(image_path, target_size=image_size)
     img_array = img_to_array(img) / 255.0
@@ -209,7 +203,7 @@ def predict_and_calorie(image_path, model, class_indices, calorie_dict):
 
     return class_name, calories
 
-# Test the model
+
 image_path = "path/to/single_food_image.jpg"
 class_name, calories = predict_and_calorie(image_path, model, train_gen.class_indices, calorie_dict)
 print(f"Predicted Class: {class_name}, Estimated Calories: {calories}")
